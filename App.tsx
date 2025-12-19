@@ -16,7 +16,7 @@ import {
   Gavel,
   ClipboardList,
   X,
-  Activity,
+
   Award,
   Lock,
   UserCheck,
@@ -341,7 +341,7 @@ const ParentDashboard = ({
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-md border-r-4 border-emerald-500 transition-colors">
             <div className="flex items-center gap-2 mb-2 text-emerald-600">
               <Star size={18} fill="currentColor" />
@@ -605,7 +605,7 @@ const StudentDetail = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-8">
+        <div className="flex flex-wrap justify-center items-center gap-4 md:gap-8">
           <div className="text-center">
             <div className="text-sm text-gray-500 mb-1">نقاط إيجابية</div>
             <div className="font-bold text-emerald-600 text-xl">+{Math.min(20, totalPositive)}</div>
@@ -630,7 +630,7 @@ const StudentDetail = ({
       </div>
 
       {/* Control Tabs (Hidden in Print) */}
-      <div className="flex gap-4 mb-6 no-print">
+      <div className="flex flex-col md:flex-row gap-4 mb-6 no-print">
         <button
           onClick={() => setActiveTab('negative')}
           className={`flex-1 py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm
@@ -1062,126 +1062,7 @@ const AddStudentModal = ({ onClose, onAdd }: { onClose: () => void, onAdd: (name
   );
 };
 
-// --- Diagnostics Modal ---
-const DiagnosticsModal = ({ onClose }: { onClose: () => void }) => {
-  const [logs, setLogs] = useState<{ id: number; msg: string; status: 'pending' | 'success' | 'error'; error?: string }[]>([]);
-  const [isRunning, setIsRunning] = useState(false);
 
-  const addLog = (msg: string, status: 'pending' | 'success' | 'error' = 'pending', error?: string) => {
-    setLogs(prev => [...prev, { id: Date.now(), msg, status, error }]);
-  };
-
-  const updateLastLog = (status: 'success' | 'error', error?: string) => {
-    setLogs(prev => {
-      const newLogs = [...prev];
-      if (newLogs.length > 0) {
-        newLogs[newLogs.length - 1].status = status;
-        newLogs[newLogs.length - 1].error = error;
-      }
-      return newLogs;
-    });
-  };
-
-  const runDiagnostics = async () => {
-    setIsRunning(true);
-    setLogs([]);
-
-    try {
-      // 1. Check Tables Existence (Read Students)
-      addLog('جاري التحقق من جدول الطلاب (students)...');
-      const { data: students, error: readError } = await supabase.from('students').select('count').limit(1).single();
-
-      if (readError) {
-        if (readError.code === '42P01') {
-          throw new Error('الجدول غير موجود (رقم الخطأ 42P01). يرجى تشغيل كود SQL.');
-        } else if (readError.code === '42501') {
-          throw new Error('لا توجد صلاحيات قراءة (رقم الخطأ 42501). يرجى إصلاح سياسات RLS.');
-        }
-        throw readError;
-      }
-      updateLastLog('success');
-
-      // 2. Check Write Permission (Insert Test)
-      addLog('جاري اختبار الكتابة (إضافة طالب تجريبي)...');
-      const testId = 'test-' + Date.now();
-      const { error: writeError } = await supabase.from('students').insert({
-        id: testId, // Use fixed ID if possible or let valid uuid generated? UUID is auto gen usually, but we can try letting it gen
-        name: 'TEST_CONNECTION_CHECK',
-        phone: '000000000',
-        base_score: 80
-      });
-
-      // Actually, if ID is UUID default, we shouldn't send it unless it's valid UUID. 
-      // Let's rely on name to delete later. Or assume success implies insert happened.
-      // Wait, my previous schema said id is uuid default gen_random_uuid().
-      // Sending 'test-'... might fail if it's strictly uuid.
-      // Let's insert without ID.
-
-      if (writeError) throw writeError;
-      updateLastLog('success');
-
-      // 3. Check Delete Permission (Cleanup)
-      addLog('جاري اختبار الحذف (تنظيف البيانات)...');
-      const { error: deleteError } = await supabase.from('students').delete().eq('name', 'TEST_CONNECTION_CHECK');
-      if (deleteError) throw deleteError;
-      updateLastLog('success');
-
-      addLog('✅ الاتصال وقاعدة البيانات تعمل بشكل ممتاز!', 'success');
-
-    } catch (err: any) {
-      updateLastLog('error', err.message || JSON.stringify(err));
-      addLog('❌ الفحص فشل. يرجى مراجعة الخطأ أعلاه.', 'error');
-    } finally {
-      setIsRunning(false);
-    }
-  };
-
-  useEffect(() => {
-    runDiagnostics();
-  }, []);
-
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in-up">
-        <div className="bg-gray-800 p-4 flex justify-between items-center text-white">
-          <h2 className="font-bold flex items-center gap-2">
-            <Activity className="text-emerald-400" />
-            فحص الاتصال بقاعدة البيانات
-          </h2>
-          <button onClick={onClose} className="hover:text-red-400"><X /></button>
-        </div>
-        <div className="p-6 max-h-[400px] overflow-y-auto space-y-3 bg-gray-50">
-          {logs.map(log => (
-            <div key={log.id} className={`text-sm p-3 rounded border ${log.status === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
-              log.status === 'error' ? 'bg-red-50 border-red-200 text-red-800' :
-                'bg-white border-gray-200 text-gray-600'
-              }`}>
-              <div className="flex items-center gap-2">
-                {log.status === 'pending' && <span className="w-2 h-2 bg-yellow-400 rounded-full animate-ping" />}
-                {log.status === 'success' && <CheckCircle2 size={16} className="text-emerald-500" />}
-                {log.status === 'error' && <AlertTriangle size={16} className="text-red-500" />}
-                <span className="font-bold">{log.msg}</span>
-              </div>
-              {log.error && <p className="mt-1 text-xs font-mono bg-red-100 p-1 rounded warp-all">{log.error}</p>}
-            </div>
-          ))}
-          {!isRunning && logs.length > 0 && !logs.some(l => l.status === 'error') && (
-            <div className="text-center py-2 text-emerald-600 font-bold">كل شيء يبدو جيداً!</div>
-          )}
-        </div>
-        <div className="p-4 border-t bg-white flex justify-end">
-          <button
-            onClick={isRunning ? undefined : runDiagnostics}
-            disabled={isRunning}
-            className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
-          >
-            {isRunning ? 'جاري الفحص...' : 'إعادة الفحص'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // --- Main App Component ---
 function App() {
@@ -1189,14 +1070,14 @@ function App() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddStudent, setShowAddStudent] = useState(false);
-  const [showDiagnostics, setShowDiagnostics] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Bulk Selection State
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Database Connection Status
-  const [dbStatus, setDbStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
+
 
   // Initialize records
   const [allRecords, setAllRecords] = useState<StudentRecord[]>([]);
@@ -1213,7 +1094,7 @@ function App() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      setDbStatus('connecting');
+
 
       // 1. Fetch Students
       const { data: studentsData, error: studentsError } = await supabase
@@ -1223,14 +1104,14 @@ function App() {
       if (studentsError) {
         if (studentsError.code === '42P01') {
           alert('تنبيه: الجداول غير موجودة في قاعدة البيانات.\nالرجاء تشغيل ملف setup_database.sql في لوحة تحكم Supabase.');
-          setDbStatus('error');
+
           setLoading(false);
           return;
         }
         throw studentsError;
       }
 
-      setDbStatus('connected');
+
 
       // Seed if empty
       if (!studentsData || studentsData.length === 0) {
@@ -1282,7 +1163,7 @@ function App() {
 
     } catch (err) {
       console.error('Error fetching data:', err);
-      setDbStatus('error');
+
       // Fallback to empty to allow UI to render (or keep loading state based on preference, but better to show UI)
     } finally {
       setLoading(false);
@@ -1580,9 +1461,7 @@ function App() {
         />
       )}
 
-      {showDiagnostics && (
-        <DiagnosticsModal onClose={() => setShowDiagnostics(false)} />
-      )}
+
 
       {/* Hidden File Input for Excel Import */}
       <input
@@ -1601,32 +1480,8 @@ function App() {
               <ClipboardList />
               لوحة تحكم الموجه الطلابي
             </h1>
-            <div className="flex gap-3">
-              <div className={`px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-2 border shadow-lg ${dbStatus === 'connected' ? 'bg-emerald-800 text-emerald-100 border-emerald-700' : dbStatus === 'error' ? 'bg-red-800 text-red-100 border-red-700' : 'bg-yellow-800 text-yellow-100 border-yellow-700'}`}>
-                {dbStatus === 'connected' ? (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    متصل بقاعدة البيانات
-                  </>
-                ) : dbStatus === 'error' ? (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-red-400"></span>
-                    خطأ في الاتصال
-                  </>
-                ) : (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-yellow-400 animate-ping"></span>
-                    جاري الاتصال...
-                  </>
-                )}
-              </div>
-              <button
-                onClick={() => setShowDiagnostics(true)}
-                className="bg-gray-800 hover:bg-gray-900 text-white px-3 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-bold shadow-lg"
-                title="فحص المشاكل"
-              >
-                <Activity size={18} />
-              </button>
+            <div className="flex gap-3 flex-wrap justify-center md:justify-start">
+
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-bold shadow-lg"
