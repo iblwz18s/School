@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>نظام السلوك والمواظبة | مدرسة سعد بن أبي وقاص</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Tajawal', 'sans-serif'],
+          },
+          colors: {
+            moe: {
+              primary: '#007b5e', // Approximate MOE Green
+              secondary: '#1b4d3e',
+              accent: '#bf9b30', // Gold/Bronze accent
+              light: '#f0f9f4'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @media print {
+      @page {
+        size: A4;
+        margin: 1cm;
+      }
+
+      body {
+        background: white;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .print-only {
+        display: block !important;
+      }
+
+      .print-break-inside {
+        break-inside: avoid;
+      }
+
+      /* Ensure inputs look like text */
+      input,
+      select,
+      textarea {
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        width: auto !important;
+      }
+
+      /* Specific tweaks for the report */
+      .shadow-lg,
+      .shadow-xl {
+        box-shadow: none !important;
+      }
+
+      .rounded-2xl,
+      .rounded-3xl {
+        border-radius: 0 !important;
+      }
+
+      .bg-gray-50 {
+        background: white !important;
+      }
+    }
+
+    .print-only {
+      display: none;
+    }
+  </style>
+
+  <link rel="stylesheet" href="/index.css">
+</head>
+
+<body class="bg-gray-50 font-sans text-gray-800">
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
+</html>
