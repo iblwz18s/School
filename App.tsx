@@ -145,7 +145,7 @@ const Login = ({
             {activeTab === 'admin' ? (
               <div className="mb-6 flex justify-center">
                 <img
-                  src="logo.png"
+                  src="/logo.png"
                   alt="شعار المدرسة"
                   className="h-56 object-contain drop-shadow-sm"
                 />
@@ -586,7 +586,7 @@ const StudentDetail = ({
             <p className="text-sm text-gray-600">تاريخ الطباعة: {new Date().toLocaleDateString('ar-SA')}</p>
           </div>
           <div className="w-24 flex justify-end">
-            <img src="logo.png" alt="شعار المدرسة" className="h-24 object-contain" />
+            <img src="/logo.png" alt="شعار المدرسة" className="h-24 object-contain" />
           </div>
         </div>
       </div>
